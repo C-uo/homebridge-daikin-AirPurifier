@@ -197,7 +197,7 @@ DaikinAirPurifier.prototype = {
         }
     },
 
-    setActiveStatus: function (state, callback, context) {
+    setActiveStatus: function (state, callback) {
         try {
             request
                 .get(this.host + '/cleaner/set_control_info')
@@ -208,8 +208,8 @@ DaikinAirPurifier.prototype = {
                     }
                     this.log('SET ACTIVE STATE(電源):' + (state == 0 ? "OFF" : "ON"));
                     this.log('response: ' + response.text)
-                    return callback('已打开')
                 }.bind(this));
+            callback()
         } catch (e) {
             this.log('SET ACTIVE STATE Failed: ' + e)
             return callback(e)
@@ -329,7 +329,7 @@ DaikinAirPurifier.prototype = {
         switch (true) {
             case state == 0:
                 this.log('風量0になるため、電源オフ')
-                return
+                break
             case state <= 20:
                 state = 1
                 type = 'しずか'
