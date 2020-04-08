@@ -130,10 +130,9 @@ function DaikinAirPurifier(log, config) {
     this.services.push(this.humidifierDehumidifer);
     this.services.push(this.humiditySensor);
 
-    this.discover()
-    // setTimeout(function () {
-    //     this.discover()
-    // }.bind(this), 10000)
+    setInterval(function () {
+        this.discover()
+    }.bind(this), 5000)
 }
 
 DaikinAirPurifier.prototype = {
@@ -147,11 +146,12 @@ DaikinAirPurifier.prototype = {
     },
 
     discover: function () {
+        if (this.AirPurifierInfo.pow == 0) return;
         try {
             request
                 .get(this.host + '/cleaner/get_unit_info')
                 .end(function (error, response) {
-                    if (error && response.statusCode != 200) {
+                    if (error || !response.text.includes('ret=OK')) {
                         throw error
                     }
 
@@ -164,10 +164,6 @@ DaikinAirPurifier.prototype = {
                 }.bind(this));
         } catch (e) {
             this.log('Failed to discover Daikin Air Purifier')
-            this.log('Will retry after 30 seconds')
-            setTimeout(function () {
-                this.discover()
-            }.bind(this), 30000)
         }
     },
 
@@ -176,7 +172,7 @@ DaikinAirPurifier.prototype = {
         request
             .get(this.host + '/cleaner/get_unit_info')
             .end(function (error, response) {
-                if (error && response.statusCode != 200) {
+                if (error || !response.text.includes('ret=OK')) {
                     this.log('GET ACTIVE STATE Failed: %s' + error)
                     return callback(error)
                 }
@@ -203,13 +199,11 @@ DaikinAirPurifier.prototype = {
                 .get(this.host + '/cleaner/set_control_info')
                 .query({'pow': state})
                 .end(function (error, response) {
-                    if (error && response.statusCode != 200) {
-                        throw error
-                    }
-                    this.log('SET ACTIVE STATE(電源):' + (state == 0 ? "OFF" : "ON"));
-                    this.log('response: ' + response.text)
+                    if (error || !response.text.includes('ret=OK')) throw error
+                    if (state == 1) this.AirPurifierInfo.pow = state
+                    this.log('SET ACTIVE STATE(電源):' + (state == 0 ? "OFF" : "ON"))
+                    return callback()
                 }.bind(this));
-            callback()
         } catch (e) {
             this.log('SET ACTIVE STATE Failed: ' + e)
             return callback(e)
@@ -221,7 +215,7 @@ DaikinAirPurifier.prototype = {
         request
             .get(this.host + '/cleaner/get_unit_info')
             .end(function (error, response) {
-                if (error && response.statusCode != 200) {
+                if (error) {
                     this.log('GET CURRENT AIR PURFIER STATE Failed: %s' + error)
                     return callback(error)
                 }
@@ -245,7 +239,7 @@ DaikinAirPurifier.prototype = {
         request
             .get(this.host + '/cleaner/get_unit_info')
             .end(function (error, response) {
-                if (error && response.statusCode != 200) {
+                if (error) {
                     this.log('GET TARGET AIR PURIFIER Failed: %s' + error)
                     return callback(error)
                 }
@@ -277,7 +271,7 @@ DaikinAirPurifier.prototype = {
             .query({'airvol': state == 0 ? 1 : 0})
             .query({'humd': state == 0 ? humd : 4}) // 風速静か＆現在加湿程度 | おまかせ
             .end(function (error, response) {
-                if (error && response.statusCode != 200) {
+                if (error) {
                     this.log('SET TARGET AIR PURIFIER STATE Failed: %s' + error)
                     return callback(error)
                 }
@@ -291,7 +285,7 @@ DaikinAirPurifier.prototype = {
         request
             .get(this.host + '/cleaner/get_unit_info')
             .end(function (error, response) {
-                if (error && response.statusCode != 200) {
+                if (error) {
                     this.log('GET TARGET AIR PURIFIER Failed: %s' + error)
                     return callback(error)
                 }
@@ -355,7 +349,7 @@ DaikinAirPurifier.prototype = {
             .query({'airvol': state})
             .query({'humd': humd}) // 現在加湿程度
             .end(function (error, response) {
-                if (error && response.statusCode != 200) {
+                if (error) {
                     this.log('SET TargetAir Purifier state Failed: %s' + error)
                     return callback(error)
                 } else if (response.text.includes('ret=PARAM NG')) {
@@ -374,7 +368,7 @@ DaikinAirPurifier.prototype = {
             request
                 .get(this.host + '/cleaner/get_unit_info')
                 .end(function (error, response) {
-                    if (error && response.statusCode != 200) {
+                    if (error) {
                         this.log('GET ACTIVE STATE Failed: %s' + error)
                         throw error
                     }
@@ -475,7 +469,7 @@ DaikinAirPurifier.prototype = {
             request
                 .get(this.host + '/cleaner/get_unit_info')
                 .end(function (error, response) {
-                    if (error && response.statusCode != 200) {
+                    if (error) {
                         this.log('GET ACTIVE STATE Failed: %s' + error)
                         throw error
                     }
@@ -529,53 +523,57 @@ DaikinAirPurifier.prototype = {
     updateAll: function () {
 
         // 开 / 关
-        // this.airPurifierService
-        //     .getCharacteristic(Characteristic.Active)
-        //     .setValue(this.activeStatus())
+        this.airPurifierService
+            .getCharacteristic(Characteristic.Active)
+            .updateValue(this.activeStatus())
 
-        // // 状态
-        // this.airPurifierService
-        //     .getCharacteristic(Characteristic.CurrentAirPurifierState)
-        //     .setValue(this.currentAirPurfierState())
+        // 状态
+        this.airPurifierService
+            .getCharacteristic(Characteristic.CurrentAirPurifierState)
+            .updateValue(this.currentAirPurfierState())
 
         // // 自动 / 手动
-        // this.airPurifierService
-        //     .getCharacteristic(Characteristic.TargetAirPurifierState)
-        //     .setValue(this.targetAirPurifierState())
+        this.airPurifierService
+            .getCharacteristic(Characteristic.TargetAirPurifierState)
+            .updateValue(this.targetAirPurifierState())
 
         // // 风速
-        // this.airPurifierService
-        //     .getCharacteristic(Characteristic.RotationSpeed)
-        //     .setValue(this.rotationSpeed())
+        this.airPurifierService
+            .getCharacteristic(Characteristic.RotationSpeed)
+            .updateValue(this.rotationSpeed())
 
         // 空气质量
         // 活动？
         this.airQualitySensor
             .getCharacteristic(Characteristic.StatusActive)
-            .setValue(this.stateuActive())
+            .updateValue(this.stateuActive())
 
         this.airQualitySensor
             .getCharacteristic(Characteristic.AirQuality)
-            .setValue(this.airQuality())
+            .updateValue(this.airQuality())
 
         this.airQualitySensor
-            .setCharacteristic(Characteristic.PM2_5Density, this.SensorInfo.pm25)
+            .getCharacteristic(Characteristic.PM2_5Density)
+            .updateValue(this.SensorInfo.pm25)
 
         this.airQualitySensor
-            .setCharacteristic(Characteristic.SulphurDioxideDensity, this.SensorInfo.odor)
+            .getCharacteristic(Characteristic.SulphurDioxideDensity)
+            .updateValue(this.SensorInfo.odor)
 
         this.airQualitySensor
-            .setCharacteristic(Characteristic.VOCDensity, this.SensorInfo.dust)
+            .getCharacteristic(Characteristic.VOCDensity)
+            .updateValue(this.SensorInfo.dust)
 
         // 温度計
         //　活躍？
         this.temperatureSensor
             .getCharacteristic(Characteristic.StatusActive)
-            .setValue(this.stateuActive())
+            .updateValue(this.stateuActive())
 
         // 温度
         this.temperatureSensor
-            .setCharacteristic(Characteristic.CurrentTemperature, this.SensorInfo.htemp)
+            .getCharacteristic(Characteristic.CurrentTemperature)
+            .updateValue(this.SensorInfo.htemp)
 
         //加湿器
         //略
@@ -589,7 +587,8 @@ DaikinAirPurifier.prototype = {
 
         // 湿度
         this.humiditySensor
-            .setCharacteristic(Characteristic.CurrentRelativeHumidity, this.SensorInfo.hhum)
+            .getCharacteristic(Characteristic.CurrentRelativeHumidity)
+            .updateValue(this.SensorInfo.hhum)
 
         this.log('情報を一括更新しました。')
     }
