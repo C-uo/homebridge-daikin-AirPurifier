@@ -20,6 +20,7 @@ function DaikinAirPurifier(log, config) {
     this.services = []
     this.AirPurifierInfo = {pow: '0', mode: '0', airvol: '0', humd: '0'}
     this.SensorInfo = {htemp: '0.0', hhum: '0', pm25: '-0', dust: '-0', odor: '-0'}
+    this.unit_status = {filter: '0', strmr_cln: '0', water_supply: '0', unit_err: '0000'}
 
 
     this.airPurifierServiceInfo = new Service.AccessoryInformation()
@@ -481,16 +482,20 @@ DaikinAirPurifier.prototype = {
                     this.SensorInfo = Info.sensor_info
                     this.unitStatus = Info.unit_status
 
-                    const {pow, humd, mode} = this.AirPurifierInfo
-                    if ((pow == 1) && (humd != 0)) {
-                        return callback(null, Characteristic.Active.ACTIVE)
-                    }
-                    return callback(null, Characteristic.Active.INACTIVE)
+                    return callback(null, this.humidifierActive())
                 }.bind(this))
         } catch (e) {
             this.log('GET Humidifier ACTIVE Failed: ' + e)
             return callback(e)
         }
+    },
+
+    humidifierActive: function () {
+        const {pow, humd, mode} = this.AirPurifierInfo
+        if ((pow == 1) && (humd != 0)) {
+            return Characteristic.Active.ACTIVE
+        }
+        return Characteristic.Active.INACTIVE
     },
 
     setHumidifierActive: function (state, callback) {
@@ -618,18 +623,19 @@ DaikinAirPurifier.prototype = {
                 }.bind(this))
             return callback(null)
         } catch (e) {
-
+            this.log('SET TARGET Humidifier STATE Failed: %s' + e)
+            return callback(e)
         }
     },
 
-    getHumidityRotationSpeed: function (callback) {
-        return callback()
-    },
-
-    setHumidityRotationSpeed: function (state, callback) {
-        this.log('SET Humidifier Rotation Speed: ' + state)
-        return callback()
-    },
+    // getHumidityRotationSpeed: function (callback) {
+    //     return callback()
+    // },
+    //
+    // setHumidityRotationSpeed: function (state, callback) {
+    //     this.log('SET Humidifier Rotation Speed: ' + state)
+    //     return callback()
+    // },
 
     getWaterLevel: function (callback) {
         try {
@@ -664,6 +670,27 @@ DaikinAirPurifier.prototype = {
             .getCharacteristic(Characteristic.RotationSpeed)
             .updateValue(this.rotationSpeed())
 
+        //加湿器
+        this.humidifierDehumidifer
+            .getCharacteristic(Characteristic.Active)
+            .updateValue(this.humidifierActive())
+
+        this.humidifierDehumidifer
+            .getCharacteristic(Characteristic.CurrentHumidifierDehumidifierState)
+            .updateValue(this.currentHumidifierState())
+
+        this.humidifierDehumidifer
+            .getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
+            .updateValue(this.targetHumidifierState())
+
+        this.humidifierDehumidifer
+            .getCharacteristic(Characteristic.CurrentRelativeHumidity)
+            .updateValue(this.SensorInfo.hhum)
+
+        this.humidifierDehumidifer
+            .getCharacteristic(Characteristic.WaterLevel)
+            .updateValue(this.unitStatus.water_supply == 0 ? 100 : 10)
+
         // 空气质量
         // 活动？
         this.airQualitySensor
@@ -696,9 +723,6 @@ DaikinAirPurifier.prototype = {
         this.temperatureSensor
             .getCharacteristic(Characteristic.CurrentTemperature)
             .updateValue(this.SensorInfo.htemp)
-
-        //加湿器
-        //略
 
 
         // 湿度计
