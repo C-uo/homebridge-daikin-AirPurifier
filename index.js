@@ -171,20 +171,22 @@ DaikinAirPurifier.prototype = {
 
     getActiveStatus: function (callback) {
         this.log('GET ACTIVE STATE');
-        request
-            .get(this.host + '/cleaner/get_unit_info')
-            .end(function (error, response) {
-                if (error || !response.text.includes('ret=OK')) {
-                    this.log('GET ACTIVE STATE Failed: %s' + error)
-                    return callback(error)
-                }
-                const Info = analyzeUnitInfo(response.text)
-                this.AirPurifierInfo = Info.ctrl_info
-                this.SensorInfo = Info.sensor_info
-                this.unitStatus = Info.unit_status
+        try {
+            request
+                .get(this.host + '/cleaner/get_unit_info')
+                .end(function (error, response) {
+                    if (error) throw error
+                    const Info = analyzeUnitInfo(response.text)
+                    this.AirPurifierInfo = Info.ctrl_info
+                    this.SensorInfo = Info.sensor_info
+                    this.unitStatus = Info.unit_status
 
-                return callback(null, this.activeStatus())
-            }.bind(this));
+                    return callback(null, this.activeStatus())
+                }.bind(this));
+        } catch (error) {
+            this.log('GET ACTIVE STATE Failed: %s' + error)
+            return callback(error)
+        }
     },
 
     activeStatus: function () {
@@ -214,20 +216,22 @@ DaikinAirPurifier.prototype = {
 
     getCurrentAirPurfierState: function (callback) {
         this.log('GET CURRENT AIR PURFIER STATE')
-        request
-            .get(this.host + '/cleaner/get_unit_info')
-            .end(function (error, response) {
-                if (error) {
-                    this.log('GET CURRENT AIR PURFIER STATE Failed: %s' + error)
-                    return callback(error)
-                }
-                const Info = analyzeUnitInfo(response.text)
-                this.AirPurifierInfo = Info.ctrl_info
-                this.SensorInfo = Info.sensor_info
-                this.unitStatus = Info.unit_status
+        try {
+            request
+                .get(this.host + '/cleaner/get_unit_info')
+                .end(function (error, response) {
+                    if (error) throw error
+                    const Info = analyzeUnitInfo(response.text)
+                    this.AirPurifierInfo = Info.ctrl_info
+                    this.SensorInfo = Info.sensor_info
+                    this.unitStatus = Info.unit_status
 
-                return callback(null, this.currentAirPurfierState())
-            }.bind(this));
+                    return callback(null, this.currentAirPurfierState())
+                }.bind(this));
+        } catch (error) {
+            this.log('GET CURRENT AIR PURFIER STATE Failed: %s' + error)
+            return callback(error)
+        }
     },
 
     currentAirPurfierState: function () {
@@ -238,20 +242,22 @@ DaikinAirPurifier.prototype = {
 
     getTargetAirPurifierState: function (callback) {
         this.log('GET TARGET AIR PURIFIER STATE');
-        request
-            .get(this.host + '/cleaner/get_unit_info')
-            .end(function (error, response) {
-                if (error) {
-                    this.log('GET TARGET AIR PURIFIER Failed: %s' + error)
-                    return callback(error)
-                }
-                const Info = analyzeUnitInfo(response.text)
-                this.AirPurifierInfo = Info.ctrl_info
-                this.SensorInfo = Info.sensor_info
-                this.unitStatus = Info.unit_status
+        try {
+            request
+                .get(this.host + '/cleaner/get_unit_info')
+                .end(function (error, response) {
+                    if (error) throw error
+                    const Info = analyzeUnitInfo(response.text)
+                    this.AirPurifierInfo = Info.ctrl_info
+                    this.SensorInfo = Info.sensor_info
+                    this.unitStatus = Info.unit_status
 
-                return callback(null, this.targetAirPurifierState())
-            }.bind(this));
+                    return callback(null, this.targetAirPurifierState())
+                }.bind(this));
+        } catch (error) {
+            this.log('GET TARGET AIR PURIFIER Failed: %s' + error)
+            return callback(error)
+        }
     },
 
     targetAirPurifierState: function () {
@@ -265,41 +271,46 @@ DaikinAirPurifier.prototype = {
 
     setTargetAirPurifierState: function (state, callback) {
         // state will be 0 or 1
-        const {pow, mode, airvol, humd} = this.AirPurifierInfo
-        request
-            .get(this.host + '/cleaner/set_control_info')
-            .query({
-                'pow': pow,
-                'mode': state,
-                'airvol': state == 0 ? 1 : 0,
-                'humd': state == 0 ? humd : 4
-            })
-            .end(function (error, response) {
-                if (error) {
-                    this.log('SET TARGET AIR PURIFIER STATE Failed: %s' + error)
-                    return callback(error)
-                }
-                this.log('SET TARGET AIR PURIFIER: ' + (state == 0 ? "マニュアル(しずか｜現在の加湿器モードを維持)" : "おまかせ"));
-                return callback(null)
-            }.bind(this));
+        try {
+            const {pow, mode, airvol, humd} = this.AirPurifierInfo
+            request
+                .get(this.host + '/cleaner/set_control_info')
+                .query({
+                    'pow': pow,
+                    'mode': state,
+                    'airvol': state == 0 ? 1 : 0,
+                    'humd': state == 0 ? humd : 4
+                })
+                .end(function (error, response) {
+                    if (error) throw error
+                    this.log('SET TARGET AIR PURIFIER: ' + (state == 0 ? "マニュアル(しずか｜現在の加湿器モードを維持)" : "おまかせ"));
+                    return callback(null)
+                }.bind(this));
+        } catch (error) {
+            this.log('SET TARGET AIR PURIFIER STATE Failed: %s' + error)
+            return callback(error)
+
+        }
     },
 
     getRotationSpeed: function (callback) {
         this.log('GET ROTATION SPEED STATE');
-        request
-            .get(this.host + '/cleaner/get_unit_info')
-            .end(function (error, response) {
-                if (error) {
-                    this.log('GET TARGET AIR PURIFIER Failed: %s' + error)
-                    return callback(error)
-                }
-                const Info = analyzeUnitInfo(response.text)
-                this.AirPurifierInfo = Info.ctrl_info
-                this.SensorInfo = Info.sensor_info
-                this.unitStatus = Info.unit_status
+        try {
+            request
+                .get(this.host + '/cleaner/get_unit_info')
+                .end(function (error, response) {
+                    if (error) throw error
+                    const Info = analyzeUnitInfo(response.text)
+                    this.AirPurifierInfo = Info.ctrl_info
+                    this.SensorInfo = Info.sensor_info
+                    this.unitStatus = Info.unit_status
 
-                return callback(null, this.rotationSpeed())
-            }.bind(this));
+                    return callback(null, this.rotationSpeed())
+                }.bind(this));
+        } catch (e) {
+            this.log('GET  Rotation Speed Failed: %s' + e)
+            return callback(e)
+        }
     },
 
     rotationSpeed: function () {
@@ -319,51 +330,48 @@ DaikinAirPurifier.prototype = {
 
     setRotationSpeed: function (state, callback) {
         // state will be 0 ~ 100
+        try {
+            const {pow, mode, airvol, humd} = this.AirPurifierInfo
+            let type = ''
 
-        this.log(state)
-        const {pow, mode, airvol, humd} = this.AirPurifierInfo
-        let type = ''
+            switch (true) {
+                case state == 0:
+                    this.log('風量0になるため、電源オフ')
+                    break
+                case state <= 20:
+                    state = 1
+                    type = 'しずか'
+                    break
+                case state <= 45:
+                    state = 2
+                    type = '弱め'
+                    break
+                case state <= 80:
+                    state = 3
+                    type = '標準'
+                    break
+                case state <= 100:
+                    state = 5
+                    type = 'ターボ'
+                    break
+            }
 
-        switch (true) {
-            case state == 0:
-                this.log('風量0になるため、電源オフ')
-                break
-            case state <= 20:
-                state = 1
-                type = 'しずか'
-                break
-            case state <= 45:
-                state = 2
-                type = '弱め'
-                break
-            case state <= 80:
-                state = 3
-                type = '標準'
-                break
-            case state <= 100:
-                state = 5
-                type = 'ターボ'
-                break
+            request
+                .get(this.host + '/cleaner/set_control_info')
+                .query({'pow': 1})
+                .query({'mode': 0})
+                .query({'airvol': state})
+                .query({'humd': humd}) // 現在加湿程度
+                .end(function (error, response) {
+                    if (error) throw error
+                    this.log(`set Rotation Speed: { airvol: ${state}, humd: ${humd} }`);
+                    return callback(null);
+                }.bind(this));
+        } catch (e) {
+            this.log('Set Rptation Speed Failed: %s' + e)
+            return callback(e)
+
         }
-
-        request
-            .get(this.host + '/cleaner/set_control_info')
-            .query({'pow': 1})
-            .query({'mode': 0})
-            .query({'airvol': state})
-            .query({'humd': humd}) // 現在加湿程度
-            .end(function (error, response) {
-                if (error) {
-                    this.log('SET TargetAir Purifier state Failed: %s' + error)
-                    return callback(error)
-                } else if (response.text.includes('ret=PARAM NG')) {
-                    this.log('Parameter ERROR when set Rotation Speed')
-                    thsi.log(`{ "pow": 1, "mode": 0, "airvol": ${state}, "humd": ${humd} }`)
-                    return callback('Set Rptation Speed Failed.')
-                }
-                this.log(`set Rotation Speed: { airvol: ${state}, humd: ${humd} }`);
-                return callback(null);
-            }.bind(this));
     },
 
     getStatusActive: function (callback) {
