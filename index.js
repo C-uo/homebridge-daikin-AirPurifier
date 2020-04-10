@@ -11,11 +11,11 @@ module.exports = function (homebridge) {
 
 // 编写配件
 function DaikinAirPurifier(log, config) {
-    this.log = log;
-    this.name = config.name || "ダイキン";
-    this.model = config.model || "unknow";
-    this.serial = config.serial || "843-R3B-9A2";
-    this.host = config.host;
+    this.log = log
+    this.name = config.name || "ダイキン"
+    this.model = config.model || "unknow"
+    this.serial = config.serial || "843-R3B-9A2"
+    this.host = config.host
 
     this.services = []
     this.AirPurifierInfo = {pow: '0', mode: '0', airvol: '0', humd: '0'}
@@ -49,6 +49,37 @@ function DaikinAirPurifier(log, config) {
         .on('get', this.getRotationSpeed.bind(this))
         .on('set', this.setRotationSpeed.bind(this))
 
+
+    // 加湿器
+    this.humidifierDehumidifer = new Service.HumidifierDehumidifier('加湿器')
+    this.humidifierDehumidifer
+        .getCharacteristic(Characteristic.CurrentRelativeHumidity)
+        .on('get', this.getCurrentHumidity.bind(this))
+
+    this.humidifierDehumidifer
+        .getCharacteristic(Characteristic.CurrentHumidifierDehumidifierState)
+        .on('get', this.getCurrentHumidifierState.bind(this))
+
+    this.humidifierDehumidifer
+        .getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
+        .on('get', this.getTargetHumidifierState.bind(this))
+        .on('set', this.setTargetHumidifierState.bind(this))
+
+    this.humidifierDehumidifer
+        .getCharacteristic(Characteristic.Active)
+        .on('get', this.getHumidifierActive.bind(this))
+        .on('set', this.setHumidifierActive.bind(this))
+
+    // this.humidifierDehumidifer
+    //     .getCharacteristic(Characteristic.RotationSpeed)
+    //     .on('get', this.getHumidityRotationSpeed.bind(this))
+    //     .on('set', this.setHumidityRotationSpeed.bind(this))
+
+    this.humidifierDehumidifer
+        .getCharacteristic(Characteristic.WaterLevel)
+        .on('get', this.getWaterLevel.bind(this))
+
+
     // 空気質センサー
     this.airQualitySensor = new Service.AirQualitySensor('空気質センサー')
     this.airQualitySensor
@@ -80,36 +111,6 @@ function DaikinAirPurifier(log, config) {
     this.temperatureSensor
         .getCharacteristic(Characteristic.StatusActive)
         .on('get', this.getStatusActive.bind(this))
-
-
-    // 加湿器
-    this.humidifierDehumidifer = new Service.HumidifierDehumidifier('加湿器')
-    this.humidifierDehumidifer
-        .getCharacteristic(Characteristic.CurrentRelativeHumidity)
-        .on('get', this.getCurrentHumidity.bind(this))
-
-    this.humidifierDehumidifer
-        .getCharacteristic(Characteristic.CurrentHumidifierDehumidifierState)
-        .on('get', this.getCurrentHumidifierState.bind(this))
-
-    this.humidifierDehumidifer
-        .getCharacteristic(Characteristic.TargetHumidifierDehumidifierState)
-        .on('get', this.getTargetHumidifierState.bind(this))
-        .on('set', this.setTargetHumidifierState.bind(this))
-
-    this.humidifierDehumidifer
-        .getCharacteristic(Characteristic.Active)
-        .on('get', this.getHumidifierActive.bind(this))
-        .on('set', this.setHumidifierActive.bind(this))
-
-    this.humidifierDehumidifer
-        .getCharacteristic(Characteristic.RotationSpeed)
-        .on('get', this.getHumidityRotationSpeed.bind(this))
-        .on('set', this.setHumidityRotationSpeed.bind(this))
-
-    this.humidifierDehumidifer
-        .getCharacteristic(Characteristic.WaterLevel)
-        .on('get', this.getWaterLevel.bind(this))
 
 
     // 湿度計
@@ -266,10 +267,12 @@ DaikinAirPurifier.prototype = {
         const {pow, mode, airvol, humd} = this.AirPurifierInfo
         request
             .get(this.host + '/cleaner/set_control_info')
-            .query({'pow': pow})
-            .query({'mode': state})
-            .query({'airvol': state == 0 ? 1 : 0})
-            .query({'humd': state == 0 ? humd : 4}) // 風速静か＆現在加湿程度 | おまかせ
+            .query({
+                'pow': pow,
+                'mode': state,
+                'airvol': state == 0 ? 1 : 0,
+                'humd': state == 0 ? humd : 4
+            })
             .end(function (error, response) {
                 if (error) {
                     this.log('SET TARGET AIR PURIFIER STATE Failed: %s' + error)
@@ -491,21 +494,132 @@ DaikinAirPurifier.prototype = {
     },
 
     setHumidifierActive: function (state, callback) {
+        let query = {}
+        if (state == 1) {
+            query = {'pow': 1}
+            this.log('電源オン')
+        } else {
+            query = {
+                'pow': 1,
+                'mode': 0,
+                'airvol': 0,
+                'humd': 0
+            }
+            this.log('風量自動、加湿オフ')
+        }
 
-        callback()
+        try {
+            request
+                .get(this.host + '/cleaner/set_control_info')
+                .query(query)
+                .end(function (error, response) {
+                    if (error) throw error
+                }.bind(this))
+            return callback(null)
+        } catch (e) {
+            this.log('SET Humidifier ACTIVE STATE Failed: ' + e)
+            return callback(e)
+        }
     },
 
     getCurrentHumidifierState: function (callback) {
-        callback()
+        this.log('GET CURRENT HUMIDIFIER STATE')
+        try {
+            request
+                .get(this.host + '/cleaner/get_unit_info')
+                .end(function (error, response) {
+                    if (error) throw error
+
+                    const Info = analyzeUnitInfo(response.text)
+                    this.AirPurifierInfo = Info.ctrl_info
+                    this.SensorInfo = Info.sensor_info
+                    this.unitStatus = Info.unit_status
+
+                    return callback(null, this.currentHumidifierState())
+                }.bind(this));
+        } catch (error) {
+            this.log('GET CURRENT AIR PURFIER STATE Failed: %s' + error)
+            return callback(error)
+        }
+    },
+
+    currentHumidifierState: function () {
+        if (this.AirPurifierInfo.pow = 0) return Characteristic.CurrentHumidifierDehumidifierState.INACTIVE
+        if (this.AirPurifierInfo.humd = 0) return Characteristic.CurrentHumidifierDehumidifierState.IDLE
+        if (this.AirPurifierInfo.humd != 0) Characteristic.CurrentHumidifierDehumidifierState.HUMIDIFYING
+        return Characteristic.CurrentHumidifierDehumidifierState.DEHUMIDIFYING // このモードになれないよねw
     },
 
     getTargetHumidifierState: function (callback) {
-        callback()
+        this.log('GET TARGET HUMIDIFIER STATE')
+        try {
+            request
+                .get(this.host + '/cleaner/get_unit_info')
+                .end(function (error, response) {
+                    if (error) throw error
+
+                    const Info = analyzeUnitInfo(response.text)
+                    this.AirPurifierInfo = Info.ctrl_info
+                    this.SensorInfo = Info.sensor_info
+                    this.unitStatus = Info.unit_status
+
+                    return callback(null, this.targetHumidifierState())
+                }.bind(this));
+        } catch (error) {
+            this.log('GET CURRENT AIR PURFIER STATE Failed: %s' + error)
+            return callback(error)
+        }
+    },
+
+    targetHumidifierState: function () {
+        if (this.AirPurifierInfo.humd = 4) return 0  // Auto
+        if (this.AirPurifierInfo.humd = 0) return 1 // Dehumidifying
+        return 2    // humidifying
     },
 
     setTargetHumidifierState: function (state, callback) {
         this.log('SET TARGET Humidifier state: ' + state)
-        callback()
+        const {airvol} = this.AirPurifierInfo
+        let query = {}
+        try {
+            if (state == 0) {
+                // AUTO
+                query = {
+                    'pow': 1,
+                    'mode': 1,
+                    'airvol': 0,
+                    'humd': 4
+                }
+                this.log('Target Humidifier state: おまかせ')
+            } else if (state == 1) {
+                // Humidifying
+                query = {
+                    'pow': 1,
+                    'mode': 0,
+                    'airvol': airvol,
+                    'humd': 3
+                }
+                this.log('Target Humidifier state: 高め')
+            } else {
+                // Dehumidifying
+                query = {
+                    'pow': 1,
+                    'mode': 0,
+                    'airvol': airvol,
+                    'humd': 1
+                }
+                this.log('Target Humidifier state: 控えめ')
+            }
+            request
+                .get(this.host + '/cleaner/set_control_info')
+                .query(query)
+                .end(function (error, response) {
+                    if (error) throw error
+                }.bind(this))
+            callback(null)
+        } catch (e) {
+
+        }
     },
 
     getHumidityRotationSpeed: function (callback) {
@@ -513,11 +627,19 @@ DaikinAirPurifier.prototype = {
     },
 
     setHumidityRotationSpeed: function (state, callback) {
+        this.log('SET Humidifier Rotation Speed: ' + state)
         callback()
     },
 
     getWaterLevel: function (callback) {
-        callback()
+        try {
+            if (this.unitStatus.water_supply == 0) {
+                callback(null, 100)
+            }
+            callback(null, 10)
+        } catch (e) {
+            callback(e)
+        }
     },
 
     updateAll: function () {
