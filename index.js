@@ -322,9 +322,9 @@ DaikinAirPurifier.prototype = {
             case '3':
                 return 60
             case '5':
-                return 100
+                return 98
             case '0':
-                return 0
+                return 100
         }
     },
 
