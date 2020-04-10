@@ -139,7 +139,7 @@ function DaikinAirPurifier(log, config) {
 DaikinAirPurifier.prototype = {
     identify: function (callback) {
         this.log('Identify requested!');
-        callback() // success
+        return callback() // success
     },
 
     getServices: function () {
@@ -380,11 +380,11 @@ DaikinAirPurifier.prototype = {
                     this.SensorInfo = Info.sensor_info
                     this.unitStatus = Info.unit_status
 
-                    callback(null, this.stateuActive())
+                    return callback(null, this.stateuActive())
                 }.bind(this))
         } catch (e) {
             this.log('GET STATUS ACTIVE Failed:' + e)
-            callback(e)
+            return callback(e)
         }
     },
 
@@ -400,7 +400,7 @@ DaikinAirPurifier.prototype = {
         } catch
             (e) {
             this.log('GET AIR QUALITY Failed:' + e)
-            callback(e)
+            return callback(e)
         }
     },
 
@@ -616,29 +616,29 @@ DaikinAirPurifier.prototype = {
                 .end(function (error, response) {
                     if (error) throw error
                 }.bind(this))
-            callback(null)
+            return callback(null)
         } catch (e) {
 
         }
     },
 
     getHumidityRotationSpeed: function (callback) {
-        callback()
+        return callback()
     },
 
     setHumidityRotationSpeed: function (state, callback) {
         this.log('SET Humidifier Rotation Speed: ' + state)
-        callback()
+        return callback()
     },
 
     getWaterLevel: function (callback) {
         try {
             if (this.unitStatus.water_supply == 0) {
-                callback(null, 100)
+                return callback(null, 100)
             }
-            callback(null, 10)
+            return callback(null, 10)
         } catch (e) {
-            callback(e)
+            return callback(e)
         }
     },
 
