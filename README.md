@@ -1,9 +1,6 @@
 # homebridge-daikin-AirPurifier
 A homebridge plugin providing support for daikin air cleaner(MCK70 Series or ACK70 Series)
 
-## Sample
-
-
 ## Installation
 
 ```shell
@@ -19,8 +16,10 @@ npm install -g .
         "serial": "8888aaaaAAAA",
         "model": "MCK70W",
         "host": "host"
-    },
-    ...
+    }
 ]
 
 ```
+
+## Sample
+![Sample photo](https://github.com/C-uo/homebridge-daikin-AirPurifier/blob/master/Sample.JPG)
