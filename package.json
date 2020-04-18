@@ -1,6 +1,6 @@
 {
   "name": "homebridge-daikin-airpurifier",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "homebridge plugin for daikin air cleaner",
   "main": "index.js",
   "repository": "https://github.com/C-uo/homebridge-daikin-AirPurifier.git",
