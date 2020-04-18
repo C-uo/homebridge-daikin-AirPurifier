@@ -22,4 +22,4 @@ npm install -g .
 ```
 
 ## Sample
-![Sample photo](https://github.com/C-uo/homebridge-daikin-AirPurifier/blob/master/Sample.JPG)
+![Sample photo](https://raw.github.com/C-uo/homebridge-daikin-AirPurifier/HEAD/Sample.JPG)
