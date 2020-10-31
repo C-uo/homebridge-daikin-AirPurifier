@@ -630,15 +630,6 @@ DaikinAirPurifier.prototype = {
         }
     },
 
-    // getHumidityRotationSpeed: function (callback) {
-    //     return callback()
-    // },
-    //
-    // setHumidityRotationSpeed: function (state, callback) {
-    //     this.log('SET Humidifier Rotation Speed: ' + state)
-    //     return callback()
-    // },
-
     getWaterLevel: function (callback) {
         try {
             if (this.unitStatus.water_supply == 0) {
@@ -726,13 +717,6 @@ DaikinAirPurifier.prototype = {
             .getCharacteristic(Characteristic.CurrentTemperature)
             .updateValue(this.SensorInfo.htemp)
 
-
-        // 湿度计
-        // 活跃？
-        // this.humiditySensor
-        //     .getCharacteristic(Characteristic.StatusActive)
-        //     .setValue(this.stateuActive())
-
         // 湿度
         this.humiditySensor
             .getCharacteristic(Characteristic.CurrentRelativeHumidity)
@@ -748,28 +732,6 @@ function analyzeResponse(text) {
 }
 
 function analyzeUnitInfo(text) {
-    /*
-    text should like
-    ret=OK,ctrl_info=pow%3d1%2cmode%3d1%2cairvol%3d0%2chumd%3d4,sensor_info=htemp%3d20.0%2chhum%3d37%2cpm25%3d0%2cdust%3d0%2codor%3d0,unit_status=filter%3d0%2cstrmr_cln%3d0%2cwater_supply%3d0%2cunit_err%3d0000,dev_setting=led_dsp%3d1%2cd_sns%3d0%2cc_lock%3d0%2cstreamer%3d0%2cact_ion%3d1%2cbuzzer%3d1%2cturbo%3d-%2ceco_moni%3d1
-
-    will return
-    {
-  ret: 'OK',
-  ctrl_info: { pow: '1', mode: '1', airvol: '0', humd: '4' },
-  sensor_info: { htemp: '20.0', hhum: '37', pm25: '0', dust: '0', odor: '0' },
-  unit_status: { filter: '0', strmr_cln: '0', water_supply: '0', unit_err: '0000' },
-  dev_setting: {
-    led_dsp: '1',
-    d_sns: '0',
-    c_lock: '0',
-    streamer: '0',
-    act_ion: '1',
-    buzzer: '1',
-    turbo: '-',
-    eco_moni: '1'
-  }
-}
-     */
     let obj = analyzeResponse(text)
     for (let key in obj) {
         if (key === 'ret') continue;
