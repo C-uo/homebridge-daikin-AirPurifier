@@ -142,7 +142,7 @@ DaikinAirPurifier.prototype = {
     },
 
     discover: function () {
-        if (this.AirPurifierInfo.pow == 0) return;
+        if (this.AirPurifierInfo.pow === 0) return;
         try {
             request
                 .get(this.host + '/cleaner/get_unit_info')
@@ -184,9 +184,9 @@ DaikinAirPurifier.prototype = {
     },
 
     activeStatus: function () {
-        if (this.AirPurifierInfo.pow == 1) {
+        if (this.AirPurifierInfo.pow === 1) {
             return Characteristic.Active.ACTIVE
-        } else if (this.AirPurifierInfo.pow == 0) {
+        } else if (this.AirPurifierInfo.pow === 0) {
             return Characteristic.Active.INACTIVE
         }
     },
@@ -198,8 +198,8 @@ DaikinAirPurifier.prototype = {
                 .query({'pow': state})
                 .end(function (error, response) {
                     if (error || !response.text.includes('ret=OK')) throw error
-                    if (state == 1) this.AirPurifierInfo.pow = state
-                    this.log('SET ACTIVE STATE(電源):' + (state == 0 ? "OFF" : "ON"))
+                    if (state === 1) this.AirPurifierInfo.pow = state
+                    this.log('SET ACTIVE STATE(電源):' + (state === 0 ? "OFF" : "ON"))
                     return callback()
                 }.bind(this));
         } catch (e) {
@@ -229,8 +229,8 @@ DaikinAirPurifier.prototype = {
     },
 
     currentAirPurfierState: function () {
-        if (this.AirPurifierInfo.pow == 0) return Characteristic.CurrentAirPurifierState.INACTIVE
-        if (this.AirPurifierInfo.mode == 2) return Characteristic.CurrentAirPurifierState.IDLE
+        if (this.AirPurifierInfo.pow === 0) return Characteristic.CurrentAirPurifierState.INACTIVE
+        if (this.AirPurifierInfo.mode === 2) return Characteristic.CurrentAirPurifierState.IDLE
         return Characteristic.CurrentAirPurifierState.PURIFYING_AIR
     },
 
@@ -256,7 +256,7 @@ DaikinAirPurifier.prototype = {
 
     targetAirPurifierState: function () {
         const {mode, airvol, humd} = this.AirPurifierInfo
-        if (mode == 1 || airvol == 0 || humd == 4) {
+        if (mode === 1 || airvol === 0 || humd === 4) {
             this.log('Current mode is Auto(おまかせ)')
             return Characteristic.TargetAirPurifierState.AUTO
         }
@@ -266,18 +266,18 @@ DaikinAirPurifier.prototype = {
     setTargetAirPurifierState: function (state, callback) {
         // state will be 0 or 1
         try {
-            const {pow, mode, airvol, humd} = this.AirPurifierInfo
+            const {pow, humd} = this.AirPurifierInfo
             request
                 .get(this.host + '/cleaner/set_control_info')
                 .query({
                     'pow': pow,
                     'mode': state,
-                    'airvol': state == 0 ? 1 : 0,
-                    'humd': state == 0 ? humd : 4
+                    'airvol': state === 0 ? 1 : 0,
+                    'humd': state === 0 ? humd : 4
                 })
-                .end(function (error, response) {
+                .end(function (error, _) {
                     if (error) throw error
-                    this.log('SET TARGET AIR PURIFIER: ' + (state == 0 ? "マニュアル(しずか｜現在の加湿器モードを維持)" : "おまかせ"));
+                    this.log('SET TARGET AIR PURIFIER: ' + (state === 0 ? "マニュアル(しずか｜現在の加湿器モードを維持)" : "おまかせ"));
                     return callback(null)
                 }.bind(this));
         } catch (error) {
@@ -325,11 +325,11 @@ DaikinAirPurifier.prototype = {
     setRotationSpeed: function (state, callback) {
         // state will be 0 ~ 100
         try {
-            const {pow, mode, airvol, humd} = this.AirPurifierInfo
+            const {humd} = this.AirPurifierInfo
             let type = ''
 
             switch (true) {
-                case state == 0:
+                case state === 0:
                     this.log('風量0になるため、電源オフ')
                     break
                 case state <= 20:
@@ -356,7 +356,7 @@ DaikinAirPurifier.prototype = {
                 .query({'mode': 0})
                 .query({'airvol': state})
                 .query({'humd': humd}) // 現在加湿程度
-                .end(function (error, response) {
+                .end(function (error, _) {
                     if (error) throw error
                     this.log(`set Rotation Speed: { airvol: ${state}, humd: ${humd} }`);
                     return callback(null);
@@ -383,7 +383,7 @@ DaikinAirPurifier.prototype = {
                     this.SensorInfo = Info.sensor_info
                     this.unitStatus = Info.unit_status
 
-                    return callback(null, this.stateuActive())
+                    return callback(null, this.stateActive())
                 }.bind(this))
         } catch (e) {
             this.log('GET STATUS ACTIVE Failed:' + e)
@@ -391,8 +391,8 @@ DaikinAirPurifier.prototype = {
         }
     },
 
-    stateuActive: function () {
-        this.AirPurifierInfo.pow == 1
+    stateActive: function () {
+        return this.AirPurifierInfo.pow === 1
     },
 
     getAirQuality: function (callback) {
@@ -493,16 +493,16 @@ DaikinAirPurifier.prototype = {
     },
 
     humidifierActive: function () {
-        const {pow, humd, mode} = this.AirPurifierInfo
-        if ((pow == 1) && (humd != 0)) {
+        const {pow, humd} = this.AirPurifierInfo
+        if (pow === 1 && humd !== 0) {
             return Characteristic.Active.ACTIVE
         }
         return Characteristic.Active.INACTIVE
     },
 
     setHumidifierActive: function (state, callback) {
-        let query = {}
-        if (state == 1) {
+        let query
+        if (state === 1) {
             query = {'pow': 1}
             this.log('電源オン')
         } else {
@@ -519,7 +519,7 @@ DaikinAirPurifier.prototype = {
             request
                 .get(this.host + '/cleaner/set_control_info')
                 .query(query)
-                .end(function (error, response) {
+                .end(function (error, _) {
                     if (error) throw error
                 }.bind(this))
             return callback(null)
@@ -551,9 +551,9 @@ DaikinAirPurifier.prototype = {
     },
 
     currentHumidifierState: function () {
-        if (this.AirPurifierInfo.pow = 0) return Characteristic.CurrentHumidifierDehumidifierState.INACTIVE
-        if (this.AirPurifierInfo.humd = 0) return Characteristic.CurrentHumidifierDehumidifierState.IDLE
-        if (this.AirPurifierInfo.humd != 0) Characteristic.CurrentHumidifierDehumidifierState.HUMIDIFYING
+        if (this.AirPurifierInfo.pow === 0) return Characteristic.CurrentHumidifierDehumidifierState.INACTIVE
+        if (this.AirPurifierInfo.humd === 0) return Characteristic.CurrentHumidifierDehumidifierState.IDLE
+        if (this.AirPurifierInfo.humd !== 0) Characteristic.CurrentHumidifierDehumidifierState.HUMIDIFYING
         return Characteristic.CurrentHumidifierDehumidifierState.DEHUMIDIFYING // このモードになれないよねw
     },
 
@@ -579,8 +579,8 @@ DaikinAirPurifier.prototype = {
     },
 
     targetHumidifierState: function () {
-        if (this.AirPurifierInfo.humd = 4) return 0  // Auto
-        if (this.AirPurifierInfo.humd = 0) return 1 // Dehumidifying
+        if (this.AirPurifierInfo.humd === 4) return 0  // Auto
+        if (this.AirPurifierInfo.humd === 0) return 1 // Dehumidifying
         return 2    // humidifying
     },
 
@@ -589,7 +589,7 @@ DaikinAirPurifier.prototype = {
         const {airvol} = this.AirPurifierInfo
         let query = {}
         try {
-            if (state == 0) {
+            if (state === 0) {
                 // AUTO
                 query = {
                     'pow': 1,
@@ -598,7 +598,7 @@ DaikinAirPurifier.prototype = {
                     'humd': 4
                 }
                 this.log('Target Humidifier state: おまかせ')
-            } else if (state == 1) {
+            } else if (state === 1) {
                 // Humidifying
                 query = {
                     'pow': 1,
@@ -620,7 +620,7 @@ DaikinAirPurifier.prototype = {
             request
                 .get(this.host + '/cleaner/set_control_info')
                 .query(query)
-                .end(function (error, response) {
+                .end(function (error, _) {
                     if (error) throw error
                 }.bind(this))
             return callback(null)
@@ -632,7 +632,7 @@ DaikinAirPurifier.prototype = {
 
     getWaterLevel: function (callback) {
         try {
-            if (this.unitStatus.water_supply == 0) {
+            if (this.unitStatus.water_supply === 0) {
                 return callback(null, 100)
             }
             return callback(null, 10)
@@ -682,13 +682,13 @@ DaikinAirPurifier.prototype = {
 
         this.humidifierDehumidifer
             .getCharacteristic(Characteristic.WaterLevel)
-            .updateValue(this.unitStatus.water_supply == 0 ? 100 : 10)
+            .updateValue(this.unitStatus.water_supply === 0 ? 100 : 10)
 
         // 空气质量
         // 活动？
         this.airQualitySensor
             .getCharacteristic(Characteristic.StatusActive)
-            .updateValue(this.stateuActive())
+            .updateValue(this.stateActive())
 
         this.airQualitySensor
             .getCharacteristic(Characteristic.AirQuality)
@@ -710,7 +710,7 @@ DaikinAirPurifier.prototype = {
         //　活躍？
         this.temperatureSensor
             .getCharacteristic(Characteristic.StatusActive)
-            .updateValue(this.stateuActive())
+            .updateValue(this.stateActive())
 
         // 温度
         this.temperatureSensor
