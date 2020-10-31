@@ -71,10 +71,6 @@ function DaikinAirPurifier(log, config) {
         .on('get', this.getHumidifierActive.bind(this))
         .on('set', this.setHumidifierActive.bind(this))
 
-    // this.humidifierDehumidifer
-    //     .getCharacteristic(Characteristic.RotationSpeed)
-    //     .on('get', this.getHumidityRotationSpeed.bind(this))
-    //     .on('set', this.setHumidityRotationSpeed.bind(this))
 
     this.humidifierDehumidifer
         .getCharacteristic(Characteristic.WaterLevel)
@@ -132,9 +128,7 @@ function DaikinAirPurifier(log, config) {
     this.services.push(this.humidifierDehumidifer);
     this.services.push(this.humiditySensor);
 
-    setInterval(function () {
-        this.discover()
-    }.bind(this), 5000)
+    this.discover()
 }
 
 DaikinAirPurifier.prototype = {
